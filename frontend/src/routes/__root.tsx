@@ -23,6 +23,27 @@ function RootLayout() {
             >
               Home
             </Link>
+
+            <Link
+              to="/create-expense"
+              activeProps={{
+                className: "bg-muted text-foreground",
+              }}
+              className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Create Expense
+            </Link>
+
+            <Link
+              to="/expenses"
+              activeProps={{
+                className: "bg-muted text-foreground",
+              }}
+              className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Expenses
+            </Link>
+
             <Link
               to="/about"
               activeProps={{
