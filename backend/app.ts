@@ -12,9 +12,11 @@ app.get("/test", (c) => {
   return c.json({ message: "Hono!" });
 });
 
-app.route("/api/expenses", expenses);
+const apiRoute = new Hono().route("/expenses", expenses);
+app.route("/api", apiRoute);
 
 app.get("*", serveStatic({ root: "./frontend/dist" }));
 app.get("*", serveStatic({ path: "./frontend/dist/index.html" }));
 
 export default app;
+export type ApiRoute = typeof apiRoute;
