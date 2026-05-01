@@ -1,0 +1,4 @@
+{$SITE_DOMAIN:cost.ojrd.space} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
