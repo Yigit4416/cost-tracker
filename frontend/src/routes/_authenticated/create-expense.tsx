@@ -14,7 +14,7 @@ import type { AnyFieldApi } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/create-expense")({
+export const Route = createFileRoute("/_authenticated/create-expense")({
   component: RouteComponent,
 });
 

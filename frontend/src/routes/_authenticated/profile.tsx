@@ -9,27 +9,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { api } from "../lib/api";
+import { userQueryOptions } from "../../lib/api";
 
-export const Route = createFileRoute("/profile")({
+export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
-async function getCurrentUser() {
-  const res = await api.me.$get();
-  if (!res.ok) {
-    throw new Error("You are not signed in");
-  }
-  const data = await res.json();
-  return data.user;
-}
-
 function ProfilePage() {
-  const { isPending, error, data } = useQuery({
-    queryKey: ["get-current-user"],
-    queryFn: getCurrentUser,
-    retry: false,
-  });
+  const { isPending, error, data } = useQuery(userQueryOptions);
 
   const displayName = getDisplayName(data);
   const initials = getInitials(displayName ?? data?.email);
@@ -79,14 +66,14 @@ function ProfilePage() {
                   {isPending ? (
                     <Skeleton className="h-8 w-48" />
                   ) : (
-                    displayName ?? "Unnamed user"
+                    (displayName ?? "Unnamed user")
                   )}
                 </CardTitle>
                 <CardDescription>
                   {isPending ? (
                     <Skeleton className="h-4 w-64 max-w-full" />
                   ) : (
-                    data?.email ?? "No email available"
+                    (data?.email ?? "No email available")
                   )}
                 </CardDescription>
               </div>
@@ -205,13 +192,11 @@ function getInitials(value?: string | null) {
 }
 
 function getDisplayName(
-  user?:
-    | {
-        given_name?: string | null;
-        family_name?: string | null;
-        email?: string | null;
-      }
-    | null
+  user?: {
+    given_name?: string | null;
+    family_name?: string | null;
+    email?: string | null;
+  } | null,
 ) {
   if (!user) {
     return undefined;
