@@ -3,12 +3,13 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "../db";
 import { expensesTable } from "../db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getUser } from "../kinde";
 
 const createExpenseSchema = z.object({
   title: z.string().min(3).max(100),
   amount: z.number().positive().finite(),
+  created_at: z.coerce.date(),
 });
 
 type ExpenseRow = typeof expensesTable.$inferSelect;
@@ -32,7 +33,8 @@ const expenses = new Hono()
     const expenses = await db
       .select()
       .from(expensesTable)
-      .where(eq(expensesTable.userId, `${user.id}`));
+      .where(eq(expensesTable.userId, `${user.id}`))
+      .orderBy(desc(expensesTable.created_at));
 
     return c.json({ expenses: expenses.map(serializeExpense) });
   })
@@ -60,6 +62,7 @@ const expenses = new Hono()
         userId: `${user.id}`,
         title: expense.title,
         amount: expense.amount.toFixed(2),
+        created_at: expense.created_at,
       })
       .returning();
 

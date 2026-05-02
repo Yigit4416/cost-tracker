@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -8,17 +9,30 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { CalendarBlankIcon } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import type { AnyFieldApi } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { format } from "date-fns";
+import z from "zod";
 
 export const Route = createFileRoute("/_authenticated/create-expense")({
   component: RouteComponent,
 });
 
-async function createExpense(input: { title: string; amount: number }) {
+async function createExpense(input: {
+  title: string;
+  amount: number;
+  created_at: string;
+}) {
   const res = await api.expenses.$post({
     json: input,
   });
@@ -37,11 +51,15 @@ function RouteComponent() {
     defaultValues: {
       title: "",
       amount: "",
+      created_at: new Date(),
     },
     onSubmit: async ({ value }) => {
+      const createdAt = normalizeSelectedDate(value.created_at);
+
       await createExpense({
         title: value.title.trim(),
         amount: Number(value.amount),
+        created_at: createdAt.toISOString(),
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["expenses"] }),
@@ -86,14 +104,10 @@ function RouteComponent() {
               <form.Field
                 name="title"
                 validators={{
-                  onChange: ({ value }) =>
-                    !value.trim()
-                      ? "A title is required"
-                      : value.trim().length < 3
-                        ? "Title must be at least 3 characters"
-                        : value.length > 100
-                          ? "Title must be 100 characters or less"
-                          : undefined,
+                  onChange: z
+                    .string()
+                    .min(3, "Title must be at least 3 characters")
+                    .max(100, "Title must be at most 100 characters"),
                 }}
                 children={(field) => (
                   <div className="grid gap-2">
@@ -147,6 +161,55 @@ function RouteComponent() {
                 )}
               />
 
+              <form.Field
+                name="created_at"
+                validators={{
+                  onChange: ({ value }) =>
+                    value instanceof Date && !Number.isNaN(value.getTime())
+                      ? undefined
+                      : "A creation date is required",
+                }}
+                children={(field) => (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name}>Created at</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id={field.name}
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "h-9 justify-start px-3 text-left font-normal",
+                            !field.state.value && "text-muted-foreground",
+                          )}
+                          disabled={form.state.isSubmitting}
+                        >
+                          <CalendarBlankIcon
+                            data-icon="inline-start"
+                            className="size-4"
+                          />
+                          {field.state.value
+                            ? format(field.state.value, "PPP")
+                            : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.state.value}
+                          onSelect={(date) => {
+                            if (date) field.handleChange(date);
+                          }}
+                          disabled={form.state.isSubmitting}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              />
+
               <form.Subscribe
                 selector={(state) => [state.errorMap.onSubmit]}
                 children={([submitError]) =>
@@ -192,6 +255,18 @@ function RouteComponent() {
         </Card>
       </div>
     </main>
+  );
+}
+
+function normalizeSelectedDate(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+    0,
   );
 }
 
