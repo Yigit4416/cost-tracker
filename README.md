@@ -58,3 +58,12 @@ sudo usermod -aG docker "$USER"
 ```
 
 Log out and SSH back in after adding your user to the `docker` group.
+
+
+# Database
+## Expenses
+  id serial pk
+  user_id string
+  title string
+  amount numeric(12, 2) // This is to store money propperly because as you might know js and math with floats are not that aligned...
+  // This will give us 9999999999.99

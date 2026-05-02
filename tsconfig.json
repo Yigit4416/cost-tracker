@@ -27,5 +27,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
   },
-  "include": ["backend/**/*.ts"]
+  "include": ["backend/**/*.ts", "drizzle.config.ts"],
 }

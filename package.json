@@ -5,10 +5,15 @@
   "private": true,
   "scripts": {
     "start": "bun backend/index.ts",
-    "dev": "bun --watch backend/index.ts"
+    "dev": "bun --watch backend/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -16,7 +21,10 @@
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
     "@kinde-oss/kinde-typescript-sdk": "^2.13.2",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.15",
+    "pg": "^8.20.0",
     "zod": "^4.4.1"
   }
 }

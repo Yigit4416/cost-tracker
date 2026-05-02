@@ -1,67 +1,116 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import { db } from "../db";
+import { expensesTable } from "../db/schema";
+import { and, eq } from "drizzle-orm";
+import { getUser } from "../kinde";
 
-const expenseSchema = z.object({
-  id: z.number().int().positive(),
+const createExpenseSchema = z.object({
   title: z.string().min(3).max(100),
-  amount: z.number().positive(),
+  amount: z.number().positive().finite(),
 });
 
-const createExpenseSchema = expenseSchema.omit({ id: true });
+type ExpenseRow = typeof expensesTable.$inferSelect;
 
-type Expense = z.infer<typeof expenseSchema>;
+function serializeExpense(expense: ExpenseRow) {
+  return {
+    ...expense,
+    amount: Number(expense.amount),
+  };
+}
 
-const fakeExpenses: Expense[] = [
-  { id: 1, title: "Rent", amount: 1200 },
-  { id: 2, title: "Groceries", amount: 215.34 },
-  { id: 3, title: "Coffee", amount: 4.5 },
-  { id: 4, title: "Internet", amount: 60 },
-  { id: 5, title: "Electricity", amount: 89.12 },
-  { id: 6, title: "Gym Membership", amount: 29.99 },
-  { id: 7, title: "Streaming Subscriptions", amount: 15.98 },
-  { id: 8, title: "Transportation", amount: 48.75 },
-  { id: 9, title: "Dining Out", amount: 67.25 },
-  { id: 10, title: "Medical", amount: 150 },
-];
+function parseExpenseId(id: string) {
+  const numberId = Number(id);
+  return Number.isInteger(numberId) && numberId > 0 ? numberId : null;
+}
 
 const expenses = new Hono()
-  .get("/", (c) => {
-    return c.json({ expenses: fakeExpenses });
+  .get("/", getUser, async (c) => {
+    const user = c.get("user");
+
+    const expenses = await db
+      .select()
+      .from(expensesTable)
+      .where(eq(expensesTable.userId, `${user.id}`));
+
+    return c.json({ expenses: expenses.map(serializeExpense) });
   })
-  .get("/total-spent", async (c) => {
-    const totalSpent = fakeExpenses.reduce((a, b) => {
-      return a + b.amount;
+  .get("/total-spent", getUser, async (c) => {
+    const user = c.get("user");
+
+    const expenses = await db
+      .select()
+      .from(expensesTable)
+      .where(eq(expensesTable.userId, `${user.id}`));
+
+    const totalSpent = expenses.reduce((a, b) => {
+      const amount = Number(b.amount);
+      return a + amount;
     }, 0);
     c.status(200);
     return c.json({ totalSpent });
   })
-  .post("/", zValidator("json", createExpenseSchema), async (c) => {
+  .post("/", getUser, zValidator("json", createExpenseSchema), async (c) => {
+    const user = c.get("user");
     const expense = c.req.valid("json");
-    fakeExpenses.push({ ...expense, id: fakeExpenses.length + 1 });
+    const [createdExpense] = await db
+      .insert(expensesTable)
+      .values({
+        userId: `${user.id}`,
+        title: expense.title,
+        amount: expense.amount.toFixed(2),
+      })
+      .returning();
+
+    if (!createdExpense) {
+      return c.json({ error: "Could not create expense" }, 500);
+    }
+
     c.status(201);
     return c.json({
-      expense,
+      expense: serializeExpense(createdExpense),
     });
   })
-  .get("/:id", (c) => {
-    const id = c.req.param("id");
-    const numberId = parseInt(id);
-    if (typeof numberId !== "number")
+  .get("/:id", getUser, async (c) => {
+    const user = c.get("user");
+    const numberId = parseExpenseId(c.req.param("id"));
+    if (!numberId) {
       return c.json({ error: "Invalid ID" }, 400);
-    const expense = fakeExpenses.find((e) => e.id === numberId);
+    }
+
+    const [expense] = await db
+      .select()
+      .from(expensesTable)
+      .where(
+        and(
+          eq(expensesTable.id, numberId),
+          eq(expensesTable.userId, `${user.id}`),
+        ),
+      );
+
     if (!expense) return c.notFound();
-    return c.json({ expense });
+    return c.json({ expense: serializeExpense(expense) });
   })
-  .delete("/:id", (c) => {
-    const id = c.req.param("id");
-    const numberId = parseInt(id);
-    if (typeof numberId !== "number")
+  .delete("/:id", getUser, async (c) => {
+    const user = c.get("user");
+    const numberId = parseExpenseId(c.req.param("id"));
+    if (!numberId) {
       return c.json({ error: "Invalid ID" }, 400);
-    const expense = fakeExpenses.find((e) => e.id === numberId);
+    }
+
+    const [expense] = await db
+      .delete(expensesTable)
+      .where(
+        and(
+          eq(expensesTable.id, numberId),
+          eq(expensesTable.userId, `${user.id}`),
+        ),
+      )
+      .returning();
+
     if (!expense) return c.notFound();
-    fakeExpenses.splice(fakeExpenses.indexOf(expense), 1);
-    return c.json({ expense: {} });
+    return c.json({ expense: serializeExpense(expense) });
   });
 
 export default expenses;
