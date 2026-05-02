@@ -17,8 +17,7 @@ export const Route = createFileRoute("/_authenticated")({
       return { user };
     } catch {
       throw redirect({
-        href: "/api/login",
-        reloadDocument: true,
+        to: "/about",
       });
     }
   },

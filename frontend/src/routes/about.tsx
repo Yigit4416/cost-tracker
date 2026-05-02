@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/about")({
@@ -23,6 +24,14 @@ function AboutPage() {
           A focused expense tracker for recording spending, keeping totals
           current, and reviewing the list without extra noise.
         </p>
+        <div className="flex flex-col gap-2 pt-3 sm:flex-row">
+          <Button asChild>
+            <a href="/api/login">Log in</a>
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/api/register">Register</a>
+          </Button>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

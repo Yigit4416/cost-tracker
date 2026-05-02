@@ -4,6 +4,8 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { userQueryOptions } from "@/lib/api";
 
 interface MyRootContext {
   queryClient: QueryClient;
@@ -11,71 +13,106 @@ interface MyRootContext {
 
 export const Route = createRootRouteWithContext<MyRootContext>()({
   component: RootLayout,
+  beforeLoad: async ({ context }) => {
+    try {
+      const user = await context.queryClient.ensureQueryData(userQueryOptions);
+      return { user, isAuthenticated: true };
+    } catch {
+      return { user: null, isAuthenticated: false };
+    }
+  },
 });
 
 function RootLayout() {
+  const { isAuthenticated } = Route.useRouteContext();
+
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-card/80">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <Link
-            to="/"
+            to={isAuthenticated ? "/" : "/about"}
             className="shrink-0 text-sm font-semibold tracking-tight"
           >
             Tracker
           </Link>
-          <nav className="-mx-4 flex overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div className="flex min-w-max items-center gap-1">
-              <Link
-                to="/"
-                activeOptions={{ exact: true }}
-                activeProps={{
-                  className: "bg-muted text-foreground",
-                }}
-                className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                Home
-              </Link>
+          <nav className="-mx-4 flex overflow-x-auto px-4 py-1 sm:mx-0 sm:overflow-visible sm:px-1">
+            <div className="flex min-w-max items-center gap-2">
+              {isAuthenticated ? (
+                <>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to="/"
+                      activeOptions={{ exact: true }}
+                      activeProps={{
+                        className:
+                          "border-primary/60 bg-primary/15 text-foreground hover:bg-primary/20",
+                      }}
+                    >
+                      Home
+                    </Link>
+                  </Button>
 
-              <Link
-                to="/create-expense"
-                activeProps={{
-                  className: "bg-muted text-foreground",
-                }}
-                className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                Create Expense
-              </Link>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to="/create-expense"
+                      activeProps={{
+                        className:
+                          "border-primary/60 bg-primary/15 text-foreground hover:bg-primary/20",
+                      }}
+                    >
+                      Create Expense
+                    </Link>
+                  </Button>
 
-              <Link
-                to="/expenses"
-                activeProps={{
-                  className: "bg-muted text-foreground",
-                }}
-                className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                Expenses
-              </Link>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to="/expenses"
+                      activeProps={{
+                        className:
+                          "border-primary/60 bg-primary/15 text-foreground hover:bg-primary/20",
+                      }}
+                    >
+                      Expenses
+                    </Link>
+                  </Button>
 
-              <Link
-                to="/profile"
-                activeProps={{
-                  className: "bg-muted text-foreground",
-                }}
-                className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                Profile
-              </Link>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to="/profile"
+                      activeProps={{
+                        className:
+                          "border-primary/60 bg-primary/15 text-foreground hover:bg-primary/20",
+                      }}
+                    >
+                      Profile
+                    </Link>
+                  </Button>
+                </>
+              ) : null}
 
-              <Link
-                to="/about"
-                activeProps={{
-                  className: "bg-muted text-foreground",
-                }}
-                className="rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                About
-              </Link>
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  to="/about"
+                  activeProps={{
+                    className:
+                      "border-primary/60 bg-primary/15 text-foreground hover:bg-primary/20",
+                  }}
+                >
+                  About
+                </Link>
+              </Button>
+
+              {!isAuthenticated ? (
+                <>
+                  <Button size="sm" asChild>
+                    <a href="/api/login">Log in</a>
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <a href="/api/register">Register</a>
+                  </Button>
+                </>
+              ) : null}
             </div>
           </nav>
         </div>

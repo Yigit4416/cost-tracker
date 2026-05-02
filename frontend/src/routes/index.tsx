@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -7,10 +7,19 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { getTotalSpentQueryOptions } from "../lib/api";
+import { getTotalSpentQueryOptions, userQueryOptions } from "../lib/api";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
+  beforeLoad: async ({ context }) => {
+    try {
+      await context.queryClient.ensureQueryData(userQueryOptions);
+    } catch {
+      throw redirect({
+        to: "/about",
+      });
+    }
+  },
 });
 
 function IndexPage() {
