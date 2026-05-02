@@ -20,8 +20,8 @@ function AboutPage() {
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">Tracker</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          A focused expense tracker for recording spending and reviewing totals
-          without extra noise.
+          A focused expense tracker for recording spending, keeping totals
+          current, and reviewing the list without extra noise.
         </p>
       </section>
 
@@ -32,8 +32,9 @@ function AboutPage() {
             <CardDescription>Simple spending visibility.</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Track expenses by title and amount, then review the full list,
-            totals, counts, and averages from one dashboard.
+            Track expenses by title, amount, and date, then review totals,
+            counts, averages, and individual rows from one authenticated
+            workspace.
           </CardContent>
         </Card>
 
@@ -45,7 +46,8 @@ function AboutPage() {
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>React with TanStack Router</li>
-              <li>TanStack Query and Form</li>
+              <li>TanStack Query caching and mutations</li>
+              <li>TanStack Form validation</li>
               <li>Hono RPC API</li>
               <li>shadcn-style UI components</li>
             </ul>
@@ -54,12 +56,13 @@ function AboutPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Status</CardTitle>
-            <CardDescription>Current demo behavior.</CardDescription>
+            <CardTitle>Data</CardTitle>
+            <CardDescription>Cached and kept in sync.</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Expenses are served from an in-memory backend list, so data resets
-            when the server restarts.
+            Expense lists and total spent are cached on the frontend. Creating
+            or deleting an expense updates the cache immediately, then refreshes
+            from the backend.
           </CardContent>
         </Card>
       </section>
@@ -73,9 +76,18 @@ function AboutPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3">
-            <Feature title="Create" text="Add a new expense with validation." />
-            <Feature title="Review" text="Browse all expenses in a table." />
-            <Feature title="Summarize" text="See total, count, and average." />
+            <Feature
+              title="Create"
+              text="Add an expense with validation for title, amount, and date."
+            />
+            <Feature
+              title="Review"
+              text="Browse every saved expense in a table with live summaries."
+            />
+            <Feature
+              title="Delete"
+              text="Remove an expense and update cached totals without waiting."
+            />
           </div>
         </CardContent>
       </Card>

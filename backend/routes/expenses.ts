@@ -56,7 +56,7 @@ const expenses = new Hono()
   .post("/", getUser, zValidator("json", createExpenseSchema), async (c) => {
     const user = c.get("user");
     const expense = c.req.valid("json");
-    const [createdExpense] = await db
+    const createdExpense = await db
       .insert(expensesTable)
       .values({
         userId: `${user.id}`,
@@ -71,8 +71,11 @@ const expenses = new Hono()
     }
 
     c.status(201);
+    const serializedExpense = createdExpense.map((data) => {
+      return serializeExpense(data);
+    });
     return c.json({
-      expense: serializeExpense(createdExpense),
+      expense: serializedExpense,
     });
   })
   .get("/:id", getUser, async (c) => {

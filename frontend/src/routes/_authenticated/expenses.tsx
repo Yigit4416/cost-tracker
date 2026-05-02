@@ -1,6 +1,13 @@
-import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  api,
+  getAllExpenses,
+  getExpenses,
+  getTotalSpentQueryOptions,
+} from "@/lib/api";
+import { TrashIcon } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -22,24 +29,54 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   component: RouteComponent,
 });
 
-async function getExpenses() {
-  const res = await api.expenses.$get();
-  if (!res.ok) {
-    throw new Error("Could not load expenses");
-  }
-  const data = await res.json();
-  return data;
-}
-
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
+async function deleteExpense(id: number) {
+  const res = await api.expenses[":id"].$delete({
+    param: { id: String(id) },
+  });
+
+  if (!res.ok) {
+    throw new Error("Could not delete expense");
+  }
+
+  return res.json();
+}
+
+type ExpensesData = Awaited<ReturnType<typeof getExpenses>>;
+
 function RouteComponent() {
-  const { isPending, error, data } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: getExpenses,
+  const queryClient = useQueryClient();
+  const { isPending, error, data } = useQuery(getAllExpenses);
+  const deleteExpenseMutation = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: async ({ expense }) => {
+      queryClient.setQueryData<ExpensesData>(
+        getAllExpenses.queryKey,
+        (old) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            expenses: old.expenses.filter((item) => item.id !== expense.id),
+          };
+        },
+      );
+      queryClient.setQueryData<number>(
+        getTotalSpentQueryOptions.queryKey,
+        (old) => (old === undefined ? old : old - expense.amount),
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getAllExpenses.queryKey }),
+        queryClient.invalidateQueries({
+          queryKey: getTotalSpentQueryOptions.queryKey,
+        }),
+      ]);
+    },
   });
 
   const expenses = data?.expenses ?? [];
@@ -47,8 +84,7 @@ function RouteComponent() {
     return total + expense.amount;
   }, 0);
 
-  const averageExpense =
-    expenses.length > 0 ? totalSpent / expenses.length : 0;
+  const averageExpense = expenses.length > 0 ? totalSpent / expenses.length : 0;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 md:py-10">
@@ -105,6 +141,7 @@ function RouteComponent() {
                 <TableHead className="w-20">ID</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="w-12 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,6 +157,9 @@ function RouteComponent() {
                     <TableCell className="flex justify-end">
                       <Skeleton className="h-4 w-20" />
                     </TableCell>
+                    <TableCell>
+                      <Skeleton className="ml-auto size-7" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : expenses.length > 0 ? (
@@ -134,12 +174,28 @@ function RouteComponent() {
                     <TableCell className="text-right font-semibold tabular-nums">
                       {currencyFormatter.format(expense.amount)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon-sm"
+                        aria-label={`Delete ${expense.title}`}
+                        title={`Delete ${expense.title}`}
+                        disabled={
+                          deleteExpenseMutation.isPending &&
+                          deleteExpenseMutation.variables === expense.id
+                        }
+                        onClick={() => deleteExpenseMutation.mutate(expense.id)}
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={4}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No expenses recorded.

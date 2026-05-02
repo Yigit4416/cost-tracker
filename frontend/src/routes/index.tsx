@@ -7,26 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { api } from "../lib/api";
+import { getTotalSpentQueryOptions } from "../lib/api";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
 });
 
-async function getTotalSpent() {
-  const res = await api.expenses["total-spent"].$get();
-  if (!res.ok) {
-    throw new Error();
-  }
-  const data = await res.json();
-  return data.totalSpent;
-}
-
 function IndexPage() {
-  const { isPending, error, data } = useQuery({
-    queryKey: ["get-total-spent"],
-    queryFn: getTotalSpent,
-  });
+  const { isPending, error, data } = useQuery(getTotalSpentQueryOptions);
 
   if (error) {
     return <div>Error: {error.message}</div>;

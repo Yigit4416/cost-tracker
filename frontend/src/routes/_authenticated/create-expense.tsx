@@ -14,7 +14,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { api } from "@/lib/api";
+import {
+  api,
+  getAllExpenses,
+  getExpenses,
+  getTotalSpentQueryOptions,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CalendarBlankIcon } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
@@ -44,6 +49,8 @@ async function createExpense(input: {
   return res.json();
 }
 
+type ExpensesData = Awaited<ReturnType<typeof getExpenses>>;
+
 function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,15 +63,54 @@ function RouteComponent() {
     onSubmit: async ({ value }) => {
       const createdAt = normalizeSelectedDate(value.created_at);
 
-      await createExpense({
+      const res = await createExpense({
         title: value.title.trim(),
         amount: Number(value.amount),
         created_at: createdAt.toISOString(),
       });
+
+      const newExpenses = res.expense;
+      queryClient.setQueryData<ExpensesData>(
+        getAllExpenses.queryKey,
+        (old) => {
+          if (!old) {
+            return { expenses: newExpenses };
+          }
+
+          const newExpenseIds = new Set(
+            newExpenses.map((expense) => expense.id),
+          );
+
+          return {
+            ...old,
+            expenses: [
+              ...newExpenses,
+              ...old.expenses.filter(
+                (expense) => !newExpenseIds.has(expense.id),
+              ),
+            ],
+          };
+        },
+      );
+      queryClient.setQueryData<number>(
+        getTotalSpentQueryOptions.queryKey,
+        (old) =>
+          old === undefined
+            ? newExpenses.reduce((total, expense) => total + expense.amount, 0)
+            : old +
+              newExpenses.reduce(
+                (total, expense) => total + expense.amount,
+                0,
+              ),
+      );
+
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["expenses"] }),
-        queryClient.invalidateQueries({ queryKey: ["get-total-spent"] }),
+        queryClient.invalidateQueries({ queryKey: getAllExpenses.queryKey }),
+        queryClient.invalidateQueries({
+          queryKey: getTotalSpentQueryOptions.queryKey,
+        }),
       ]);
+
       form.reset();
       navigate({ to: "/expenses" });
     },

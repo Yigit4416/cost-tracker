@@ -22,3 +22,33 @@ export const userQueryOptions = queryOptions({
   queryFn: getCurrentUser,
   staleTime: Infinity,
 });
+
+export async function getExpenses() {
+  const res = await api.expenses.$get();
+  if (!res.ok) {
+    throw new Error("Could not load expenses");
+  }
+  const data = await res.json();
+  return data;
+}
+
+export async function getTotalSpent() {
+  const res = await api.expenses["total-spent"].$get();
+  if (!res.ok) {
+    throw new Error("Could not load total spent");
+  }
+  const data = await res.json();
+  return data.totalSpent;
+}
+
+export const getAllExpenses = queryOptions({
+  queryKey: ["get-all-expenses"],
+  queryFn: getExpenses,
+  staleTime: 60000,
+});
+
+export const getTotalSpentQueryOptions = queryOptions({
+  queryKey: ["get-total-spent"],
+  queryFn: getTotalSpent,
+  staleTime: 60000,
+});
